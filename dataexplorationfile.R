@@ -24,6 +24,8 @@ cityweather$pressure_cat <- ordered(cityweather$pressure_cat, levels = c("Very L
 cityweather$wind_speed_cat <- ordered(cityweather$wind_speed_cat, levels = c("Very Low","Low","High","Very High"))
 cityweather$wind_deg_cat <- ordered(cityweather$wind_deg_cat, levels = c("North", "East", "South", "West"))
 
+write_csv(cityweather, file = "USCities/cityweather2.csv")
+
 
 #Categorical Summaries
 
