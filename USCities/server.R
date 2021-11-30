@@ -9,6 +9,7 @@
 
 library(shiny)
 library(tidyverse)
+library(DT)
 
 # Define server logic required to draw a histogram
 shinyServer(function(session, input, output) {
@@ -83,5 +84,57 @@ shinyServer(function(session, input, output) {
     })
     
     
+    output$Tables <- renderTable({
+        
+        newData <- getData()
+        
+        if((input$tab_type == "contingency") & (input$cont_vars == "latitude x longitude")){
+            table(newData$lon_cat, newData$lat_cat, deparse.level = 2)
+        } else if ((input$tab_type == "contingency") & (input$cont_vars == "wind speed x wind direction")){
+            table(newData$wind_speed_cat, newData$wind_deg_cat, deparse.level = 2)
+        } else if((input$tab_type == "contingency") & (input$cont_vars == "wind speed x wind direction x temperature")){
+            table(newData$wind_speed_cat, newData$wind_deg_cat, newData$temp_cat, deparse.level = 2)
+        } else if((input$tab_type == "contingency") & (input$cont_vars == "longitude x humidity")){
+            table(newData$lon_cat, newData$humidity_cat, deparse.level = 2)
+        } else if((input$tab_type == "contingency") & (input$cont_vars == "latitude x humidity")){
+            table(newData$lat_cat, newData$humidity_cat, deparse.level = 2)
+        } else {
+            table(newData$temp_cat, newData$humidity_cat, deparse.level = 2)
+        }
+        
+    })
+    
+    
+    output$Data <- DT::renderDT({
+        
+        dat <- getData()
+        
+        dat$lon_cat <- as.factor(dat$lon_cat)
+        dat$lat_cat <- as.factor(dat$lat_cat)
+        dat$humidity_cat <- as.factor(dat$humidity_cat)
+        dat$temp_cat <- as.factor(dat$temp_cat)
+        dat$pressure_cat <- as.factor(dat$pressure_cat)
+        dat$wind_speed_cat <- as.factor(dat$wind_speed_cat)
+        dat$wind_deg_cat <- as.factor(dat$wind_deg_cat)
+        
+        if (input$datavars == "all") {
+            dat
+        }else{
+            dat %>% select(input$datavars)
+        }
+        
+
+    }, filter = "top")
+
+
+    
+    output$download_filtered <- 
+    
+        downloadHandler(
+            filename = "Filtered Data.csv",
+            content = function(file){
+                write.csv(getData()[input[["Data_rows_all"]], input$datavars], file)
+            }
+        )
 
 })

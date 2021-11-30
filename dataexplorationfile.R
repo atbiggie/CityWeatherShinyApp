@@ -29,11 +29,24 @@ write_csv(cityweather, file = "USCities/cityweather2.csv")
 
 #Categorical Summaries
 
-table(cityweather$lon_cat, cityweather$lat_cat, deparse.level = 2)
+#lat x long
+as.data.frame.data.frame(table(cityweather$lon_cat, cityweather$lat_cat, deparse.level = 2))
 
-table(cityweather$lon_cat, cityweather$humidity_cat, deparse.level = 2)
+#wind speed x wind direction
+table(cityweather$wind_speed_cat, cityweather$wind_deg_cat, deparse.level = 2)
 
+#wind speed x wind direction x temp
+tab <- table(cityweather$wind_speed_cat, cityweather$wind_deg_cat, cityweather$temp_cat, deparse.level = 2)
+
+as.data.frame(tab)
+#lon x humidity
+datatable(table(cityweather$lon_cat, cityweather$humidity_cat, deparse.level = 2))
+
+#lat by humidity
 table(cityweather$lat_cat, cityweather$humidity_cat, deparse.level = 2)
+
+#temp by humidity
+table(cityweather$temp_cat, cityweather$humidity_cat, deparse.level = 2)
 
 #Numerical Summaries
 

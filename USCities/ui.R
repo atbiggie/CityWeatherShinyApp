@@ -9,6 +9,7 @@
 
 library(shiny)
 library(tidyverse)
+library(DT)
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -35,13 +36,17 @@ shinyUI(fluidPage(
             
             h3("Table Options"),
             
+            selectizeInput("tab_type", "Table Type", selected = "contingency", choices = c("contingency", "numerical summary")),
+            
+            conditionalPanel(condition = "input.tab_type == 'contingency'", selectizeInput("cont_vars", "Select the desired table:", choices = c("latitude x longitude", "wind speed x wind direction", "wind speed x wind direction x temperature", "longitude x humidity", "latitude x humidity", "temperature x humidity"), selected = "latitude x longitude"))
             
                      ),
                      
                      
     # Show a plot of the generated distribution
             mainPanel(
-              plotOutput("CityPlot")
+              plotOutput("CityPlot"),
+              tableOutput("Tables")
                      )
                  )),
     
@@ -63,10 +68,21 @@ shinyUI(fluidPage(
              ),
     
     tabPanel("Data", fluid = TRUE,
-             mainPanel(
-                 br(),
-                 p("This is the data page!")
-             ))
+             sidebarLayout(
+               sidebarPanel(
+                  h3("Data Table Options"),
+                  
+                  checkboxGroupInput("datavars", "Select variables to subset:", choices = c("all", "id", "dt", "name", "Lon", "Lat", "temp", "feels_like", "temp_min", "temp_max", "pressure", "humidity", "wind_speed", "wind_deg", "numclouds", "tempdiff", "lon_cat", "lat_cat", "humidity_cat", "temp_cat", "pressure_cat", "wind_speed_cat", "wind_deg_cat"), selected = "all"),
+                  
+                  downloadButton("download_filtered", "Download Table")
+               
+                  ),
+               
+               mainPanel(
+                   DTOutput("Data")
+               )
+             )
+             )
     )
 
 
