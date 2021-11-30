@@ -26,9 +26,10 @@ shinyUI(fluidPage(
          # Sidebar with a slider input for number of bins
           sidebarLayout(
             sidebarPanel(
+              checkboxInput("filtopt", "Filter observations by conditions chosen in 'Data' tab"),
+              
               h3("Plot Options"),
               selectizeInput("plot_type", "Plot Type", selected = "histogram", choices = c("histogram", "scatter plot")),
-            br(),
                          
             conditionalPanel(condition = "input.plot_type == 'histogram'", selectizeInput("hist_var", "Select Variable to Plot:", selected = "latitude", choices = c("latitude", "longitude", "temperature", "pressure", "humidity", "wind speed", "wind direction"))),
                          
@@ -36,9 +37,13 @@ shinyUI(fluidPage(
             
             h3("Table Options"),
             
-            selectizeInput("tab_type", "Table Type", selected = "contingency", choices = c("contingency", "numerical summary")),
+            selectizeInput("tab_type", "Table Type", selected = "numerical summary", choices = c("contingency", "numerical summary")),
             
-            conditionalPanel(condition = "input.tab_type == 'contingency'", selectizeInput("cont_vars", "Select the desired table:", choices = c("latitude x longitude", "wind speed x wind direction", "wind speed x wind direction x temperature", "longitude x humidity", "latitude x humidity", "temperature x humidity"), selected = "latitude x longitude"))
+            conditionalPanel(condition = "input.tab_type == 'contingency'", selectizeInput("cont_vars", "Select the desired table:", choices = c("latitude x longitude", "wind speed x wind direction", "wind speed x wind direction x temperature", "longitude x humidity", "latitude x humidity", "temperature x humidity"), selected = "latitude x longitude")),
+            
+            conditionalPanel(condition = "input.tab_type == 'numerical summary'", selectizeInput("num_group", "Group by:", choices = c("latitude", "longitude"), selected = "latitude")),
+            
+            conditionalPanel(condition = "input.tab_type == 'numerical summary'", selectizeInput("num_vars", "Summarize:", choices = c("temperature info", "humidity and pressure info", "wind info"), selected = "temperature info"))
             
                      ),
                      

@@ -18,10 +18,18 @@ shinyServer(function(session, input, output) {
         newData <- read_csv("cityweather2.csv", col_names = TRUE)
     })
     
+    observeEvent(input$datavars != "all", 
+                 updateCheckboxInput(session, "filtopt", value = 0))
+    
+
     output$CityPlot <- renderPlot({
-        
+      
+      if(input$filtopt){
+        newData <- getData()[input[["Data_rows_all"]], ]
+      }else{
         newData <- getData()
-        
+      }
+    
         ifelse((input$plot_type == "histogram") & (input$hist_var == "latitude"), 
                print(ggplot(newData, aes(Lat)) + geom_histogram(aes(y = ..density..), fill = "#225ea8") + geom_density(alpha = 0.3, fill = "#fc8d59", color = "#fc8d59") +
                          labs(title = "Histogram of Latitude", x = "Latitude")),
@@ -86,7 +94,11 @@ shinyServer(function(session, input, output) {
     
     output$Tables <- renderTable({
         
-        newData <- getData()
+        if(input$filtopt){
+            newData <- getData()[input[["Data_rows_all"]], ]
+        }else{
+            newData <- getData()
+        }
         
         if((input$tab_type == "contingency") & (input$cont_vars == "latitude x longitude")){
             table(newData$lon_cat, newData$lat_cat, deparse.level = 2)
@@ -98,8 +110,20 @@ shinyServer(function(session, input, output) {
             table(newData$lon_cat, newData$humidity_cat, deparse.level = 2)
         } else if((input$tab_type == "contingency") & (input$cont_vars == "latitude x humidity")){
             table(newData$lat_cat, newData$humidity_cat, deparse.level = 2)
-        } else {
+        } else if((input$tab_type == "contingency") & (input$cont_vars == "temperature x humidity")){
             table(newData$temp_cat, newData$humidity_cat, deparse.level = 2)
+        } else if((input$tab_type == "numerical summary") & (input$num_group == "latitude") & (input$num_vars == "temperature info")){
+            newData %>% group_by(lat_cat) %>% summarise(avg_temp = mean(temp), sd_temp = sd(temp), avg_tempdiff = mean(tempdiff), sd_tempdiff = sd(tempdiff))
+        } else if((input$tab_type == "numerical summary") & (input$num_group == "latitude") & (input$num_vars == "humidity and pressure info")){
+            newData %>% group_by(lat_cat) %>% summarise(avg_humidity = mean(humidity), sd_humidity = sd(humidity), avg_pressure = mean(pressure), sd_pressure = sd(pressure))
+        } else if((input$tab_type == "numerical summary") & (input$num_group == "latitude") & (input$num_vars == "wind info")){
+            newData %>% group_by(lat_cat) %>% summarise(avg_wind_speed = mean(wind_speed), sd_wind_speed = sd(wind_speed), avg_wind_direction = mean(wind_deg), sd_wind_direction = sd(wind_deg))
+        } else if((input$tab_type == "numerical summary") & (input$num_group == "longitude") & (input$num_vars == "wind info")){
+            newData %>% group_by(lon_cat) %>% summarise(avg_wind_speed = mean(wind_speed), sd_wind_speed = sd(wind_speed), avg_wind_direction = mean(wind_deg), sd_wind_direction = sd(wind_deg))
+        } else if((input$tab_type == "numerical summary") & (input$num_group == "longitude") & (input$num_vars == "humidity and pressure info")){
+            newData %>% group_by(lon_cat) %>% summarise(avg_humidity = mean(humidity), sd_humidity = sd(humidity), avg_pressure = mean(pressure), sd_pressure = sd(pressure))
+        } else {
+            newData %>% group_by(lon_cat) %>% summarise(avg_temp = mean(temp), sd_temp = sd(temp), avg_tempdiff = mean(tempdiff), sd_tempdiff = sd(tempdiff))
         }
         
     })

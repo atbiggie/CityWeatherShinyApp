@@ -52,12 +52,15 @@ table(cityweather$temp_cat, cityweather$humidity_cat, deparse.level = 2)
 
 cityweather %>% group_by(lat_cat) %>% summarise(avg_temp = mean(temp), sd_temp = sd(temp), avg_tempdiff = mean(tempdiff), sd_tempdiff = sd(tempdiff))
 
-cityweather %>% group_by(humidity_cat) %>% summarise(avg_clouds = mean(numclouds), IQR = IQR(numclouds))
-
 cityweather %>% group_by(lon_cat) %>% summarise(avg_temp = mean(temp), sd_temp = sd(temp), avg_tempdiff = mean(tempdiff), sd_tempdiff = sd(tempdiff))
 
-cityweather %>% group_by(lat_cat) %>% summarise(avg_humidity = mean(humidity), sd_humidity = sd(humidity))
+cityweather %>% group_by(lat_cat) %>% summarise(avg_humidity = mean(humidity), sd_humidity = sd(humidity), avg_pressure = mean(pressure), sd_pressure = sd(pressure))
 
+cityweather %>% group_by(lon_cat) %>% summarise(avg_humidity = mean(humidity), sd_humidity = sd(humidity), avg_pressure = mean(pressure), sd_pressure = sd(pressure))
+
+cityweather %>% group_by(lat_cat) %>% summarise(avg_wind_speed = mean(wind_speed), sd(wind_speed), avg_wind_direction = mean(wind_deg), sd_wind_direction = sd(wind_deg))
+
+cityweather %>% group_by(lon_cat) %>% summarise(avg_wind_speed = mean(wind_speed), sd(wind_speed), avg_wind_direction = mean(wind_deg), sd_wind_direction = sd(wind_deg))
 
 #Visual Summaries
 
