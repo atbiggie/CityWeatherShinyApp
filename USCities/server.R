@@ -10,6 +10,8 @@
 library(shiny)
 library(tidyverse)
 library(DT)
+library(caret)
+library(randomForest)
 
 # Define server logic required to draw a histogram
 shinyServer(function(session, input, output) {
@@ -160,5 +162,149 @@ shinyServer(function(session, input, output) {
                 write.csv(getData()[input[["Data_rows_all"]], input$datavars], file)
             }
         )
+    
+    linreg <- eventReactive(input$fit, {
+        newData1 <- getData() %>% select(Lat, input$linregvars)
+        set.seed(123)
+        trainIndex1 <- createDataPartition(newData1$Lat, p = input$train_p, list = FALSE)
+        train1 <- newData1[trainIndex1, ]
+        test1 <- newData1[-trainIndex1,]
+        
+        fit_lr <- train(Lat ~ ., 
+                        data = train1,
+                        method = "lm", 
+                        preProcess = c("center", "scale"),
+                        trControl = trainControl(method = "cv", number = as.numeric(input$foldnum)))
+    })
+    
+    output$lrMod <- renderPrint({
+        summary(linreg())
+        })
+    
+    output$lrfit <- renderPrint({
+        linreg()$results
+    })
+    
+    regtree <- eventReactive(input$fit, {
+        newData2 <- getData() %>% select(Lat, input$regtreevars)
+        
+        set.seed(123)
+        trainIndex2 <- createDataPartition(newData2$Lat, p = input$train_p, list = FALSE)
+        train2 <- newData2[trainIndex2, ]
+        test2 <- newData2[-trainIndex2,]
+        
+        regtree_fit <- train(Lat ~ ., 
+                             data = train2,
+                             method = "rpart", 
+                             preProcess = c("center", "scale"),
+                             trControl = trainControl(method = "cv", number = as.numeric(input$foldnum)),
+                             tuneGrid = expand.grid(cp = seq(from = 0, to = 0.1, by = 0.001)))
+    })
+    
+    
+    output$rtPlot <- renderPlot({
+        plot(regtree())
+    })
+    
+    output$rtMod <- renderPrint({
+        regtree()$bestTune
+    })
+    
+    output$rtfit <- renderPrint({
+        regtree()$results[1, ]
+    })
+    
+    
+    rf <- eventReactive(input$fit, {
+        newData3 <- getData() %>% select(Lat, input$randforvars)
+        
+        set.seed(123)
+        trainIndex3 <- createDataPartition(newData3$Lat, p = input$train_p, list = FALSE)
+        train3 <- newData3[trainIndex3, ]
+        test3 <- newData3[-trainIndex3,]
+        
+        rf_fit <- train(Lat ~ ., 
+                        data = train3,
+                        method = "rf", 
+                        preProcess = c("center", "scale"),
+                        trControl = trainControl(method = "cv", number = as.numeric(input$foldnum)),
+                        tuneGrid = expand.grid(mtry = c(1:10))
+        )
+    })
+    
+    rfplot <- eventReactive(input$fit, {
+        newData <- getData() %>% select(Lat, input$randforvars)
+        
+        set.seed(123)
+        trainIndex <- createDataPartition(newData$Lat, p = input$train_p, list = FALSE)
+        train <- newData[trainIndex, ]
+        test <- newData[-trainIndex,]
+        
+        
+        rf_fit <- randomForest(Lat ~., data = train, mtry = 8, importance = TRUE)
+  
+    })
+    
+    output$rfPlot <- renderPlot({
+        varImpPlot(rfplot())
+    })
+    
+    output$rfMod <- renderPrint({
+        rf()$bestTune
+    })
+    
+    output$rffit <- renderPrint({
+        rf()$results
+    })
+    
+    test_tab <- eventReactive(input$fit, {
+        newData <- getData()
+        
+        set.seed(123)
+        trainIndex <- createDataPartition(newData$Lat, p = input$train_p, list = FALSE)
+        train <- newData[trainIndex, ]
+        test <- newData[-trainIndex,]
+        
+        lr_pred <- predict(linreg(), newdata = test)
+        Linear_Regression <- postResample(lr_pred, test$Lat)
+        
+        tree_pred <- predict(regtree(), newdata = test)
+        Regression_Tree <- postResample(tree_pred, test$Lat)
+        
+        rf_pred <- predict(rf(), newdata = test)
+        Random_Forest <- postResample(rf_pred, test$Lat)
+        
+        rbind(Linear_Regression,Regression_Tree,Random_Forest)
+        
+    })
+    
+    output$testrun <- renderDT({
+        test_tab()
+    })
+    
+    
+    output$Pred <- renderPrint({
+        
+        newDat <- data.frame(Lon = input$Lon, temp = input$temp, feels_like = input$feels_like, temp_min = input$temp_min, temp_max = input$temp_max, pressure = input$pressure, humidity = input$humidity, wind_speed = input$wind_speed, wind_deg = input$wind_deg, numclouds = input$numclouds)
+        
+        if (input$selectmod == "Linear Regression") {
+            pred <- predict(linreg()$finalModel, newdata = newDat)
+            pred <- round(pred, digits = 3)
+            paste("For these values, the predicted response for Latitude is", pred, sep = " ")
+        } else if (input$selectmod == "Regression Tree"){
+            pred <- predict(regtree()$finalModel, newdata = newDat)
+            pred <- round(pred, digits = 3)
+            paste("For these values, the predicted response for Latitude is", pred, sep = " ")
+        } else {
+            pred <- predict(regtree()$finalModel, newdata = newDat)
+            pred <- round(pred, digits = 3)
+            paste("For these values, the predicted response for Latitude is", pred, sep = " ")
+        }
+        
+        
+        
+    })
+    
+    
 
 })
