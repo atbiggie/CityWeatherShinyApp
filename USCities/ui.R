@@ -1,29 +1,26 @@
-#
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+### Weather API Shiny App
+### Autumn Biggie
+### Last updated on 12/05/2021
 
 library(shiny)
 library(tidyverse)
 library(DT)
 
-# Define UI for application that draws a histogram
+# Define UI for application
 shinyUI(fluidPage(
 
     # Application title
     titlePanel("Weather Data From U.S. Cities"),
     
     tabsetPanel(
+        #define about page
         tabPanel("About", fluid = TRUE,
                  mainPanel(
                      h3("Let's examine some weather data..."),
                      p("The purpose of this app is to employ various data exploration and modeling techniques to analyze a weather dataset and ultimately predict Latitude given a set of variable values."),
                      p("The data was queried from the ", a("OpenWeather API", href = "http://openweathermap.org/api"), " using an endpoint that allows users to call current weather data from several cities within a rectangle zone of geographic coordinates. Note that this endpoint will be deprecated beginning January 1st, 2022. The dataset used within this app contains weather data queried on November 23rd, 2021 from all cities within the continental United States, as well as a handful from Mexico and Canada."),
                      br(),
+                     #add image
                      img(src = "apilogo.png", height = 150, width = 350),
                      br(),
                      h4("Variable Descriptions"),
@@ -36,13 +33,15 @@ shinyUI(fluidPage(
                      p("The ", strong("Data"), " tab allows users to explore the raw dataset, with the functionality to select variables to view as well as filter rows. The - possibly subsetted/filtered - dataset may be downloaded from this tab as well.")
                  )
                  ),
-        
+        #define data exploration page
         tabPanel("Data Exploration", fluid = TRUE,
-         # Sidebar with a slider input for number of bins
+         
           sidebarLayout(
             sidebarPanel(
+                
               checkboxInput("filtopt", "Filter observations by conditions chosen in 'Data' tab"),
               
+              #plot options
               h3("Plot Options"),
               selectizeInput("plot_type", "Plot Type", selected = "histogram", choices = c("histogram", "scatter plot")),
                          
@@ -50,6 +49,7 @@ shinyUI(fluidPage(
                          
             conditionalPanel(condition = "input.plot_type == 'scatter plot'", selectizeInput("scat_var", "Select Overlay Variable:", selected = "none", choices = c("none", "temperature", "pressure", "humidity", "wind speed", "wind direction"))),
             
+            #table options
             h3("Table Options"),
             
             selectizeInput("tab_type", "Table Type", selected = "numerical summary", choices = c("contingency", "numerical summary")),
@@ -63,16 +63,19 @@ shinyUI(fluidPage(
                      ),
                      
                      
-    # Show a plot of the generated distribution
+    # output plot and tables
             mainPanel(
               plotOutput("CityPlot"),
               tableOutput("Tables")
                      )
                  )),
     
+    #define modeling tab
     navbarMenu("Modeling",
+               #modeling info page
              tabPanel("Modeling Info", fluid = TRUE,
                       mainPanel(
+        
                           h3("Modeling Information"),
                           br(),
                           h4(strong("1. Linear Regression")),
@@ -96,26 +99,31 @@ shinyUI(fluidPage(
                           p(strong("Disadvantages:"), " Random Forest models have very low interpretability. They are more valuable for prediction purposes. These models can also require a lot of computing power to create.")
                           )
                       ),
+             #define model fitting page
              tabPanel("Model Fitting", fluid = TRUE,
                       sidebarLayout(
                         sidebarPanel(
                           h3("Model Fitting"),
-                          sliderInput("train_p", "Proportion of data in training set:", min = .5, max = .9, value = .7),
+                          sliderInput("train_p", "Proportion of data in training set:", min = .5, max = .9, value = .7), 
+                          #select cv folds
                           selectInput("foldnum", "Number of Folds for Cross-Validation", choices = c(3,4,5,6,7,8,9,10), selected = 5),
-                          
+                          #linear reg model
                           h4("Linear Regression Model"),
                           selectInput("linregvars", "Select variables to include in model:", choices = c("Lon", "temp", "feels_like", "temp_min", "temp_max", "pressure", "humidity", "wind_speed", "wind_deg", "numclouds"), multiple = TRUE),
-                          
+                          #interactions
                           selectInput("linregint", "Select interactions to include in model:", choices = c("Lon:temp", "Lon:feels_like", "Lon:temp_min", "Lon:temp_max", "Lon:pressure", "Lon:humidity", "Lon:wind_speed", "Lon:wind_deg", "Lon:numclouds", "temp:feels_like", "temp:temp_min", "temp:temp_max", "temp:pressure", "temp:humidity", "temp:wind_speed", "temp:wind_deg", "temp:numclouds", "feels_like:temp_min", "feels_like:temp_max", "feels_like:pressure", "feels_like:humidity", "feels_like:wind_speed", "feels_like:wind_deg", "feels_like:numclouds", "temp_min:temp_max", "temp_min:pressure", "temp_min:humidity", "temp_min:wind_speed", "temp_min:wind_deg", "temp_min:numclouds", "temp_max:pressure", "temp_max:humidity", "temp_max:wind_speed", "temp_max:wind_deg", "temp_max:numclouds", "pressure:humidity", "pressure:wind_speed", "pressure:wind_deg", "pressure:numclouds", "humidity:wind_speed", "humidity:wind_deg", "humidity:numclouds", "wind_speed:wind_deg", "wind_speed:numclouds", "wind_deg:numclouds"), multiple = TRUE),
-                          
+                          #regression tree model
                           h4("Regression Tree"),
                           selectInput("regtreevars", "Select variables to include in model:", choices = c("Lon", "temp", "feels_like", "temp_min", "temp_max", "pressure", "humidity", "wind_speed", "wind_deg", "numclouds"), multiple = TRUE),
                           
+                          #random forest vars
                           h4("Random Forest"),
                           selectInput("randforvars", "Select variables to include in model:", choices = c("Lon", "temp", "feels_like", "temp_min", "temp_max", "pressure", "humidity", "wind_speed", "wind_deg", "numclouds"), multiple = TRUE),
                           
+                          #fit all models at once
                           actionButton("fit", "Fit Models")
                         ),
+                        #output
                       mainPanel(
                           h3("Linear Regression Model"),
                           verbatimTextOutput("lrMod"),
@@ -140,6 +148,8 @@ shinyUI(fluidPage(
                           h3("Fit Statistics on Test Set"),
                           DTOutput("testrun")
                       ))),
+             
+             #define prediction page
              tabPanel("Prediction", fluid = TRUE,
                         wellPanel(
                             h3("Response Prediction"),
@@ -167,13 +177,16 @@ shinyUI(fluidPage(
                       ))
              ),
     
+    #define data page
     tabPanel("Data", fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
                   h3("Data Table Options"),
                   
+                  #subset columns
                   checkboxGroupInput("datavars", "Select variables to subset:", choices = c("all", "id", "dt", "name", "Lon", "Lat", "temp", "feels_like", "temp_min", "temp_max", "pressure", "humidity", "wind_speed", "wind_deg", "numclouds", "tempdiff", "lon_cat", "lat_cat", "humidity_cat", "temp_cat", "pressure_cat", "wind_speed_cat", "wind_deg_cat"), selected = "all"),
                   
+                  #download subsetted table
                   downloadButton("download_filtered", "Download Table")
                
                   ),

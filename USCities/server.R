@@ -1,11 +1,6 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+### Weather API Shiny App
+### Autumn Biggie
+### last updated 12/05/2021
 
 library(shiny)
 library(tidyverse)
@@ -13,17 +8,19 @@ library(DT)
 library(caret)
 library(randomForest)
 
-# Define server logic required to draw a histogram
+# Define server logic
 shinyServer(function(session, input, output) {
     
+    #import data
     getData <- reactive({
         newData <- read_csv("cityweather2.csv", col_names = TRUE)
     })
     
+    #change filter option on data exploration page based on subsetting choices on data page
     observeEvent(input$datavars != "all", 
                  updateCheckboxInput(session, "filtopt", value = 0))
     
-
+#define plots
     output$CityPlot <- renderPlot({
       
       if(input$filtopt){
@@ -93,7 +90,7 @@ shinyServer(function(session, input, output) {
 
     })
     
-    
+    #define contingency tables and numerical summaries
     output$Tables <- renderTable({
         
         if(input$filtopt){
@@ -130,7 +127,7 @@ shinyServer(function(session, input, output) {
         
     })
     
-    
+    #define raw data table
     output$Data <- DT::renderDT({
         
         dat <- getData()
@@ -150,10 +147,10 @@ shinyServer(function(session, input, output) {
         }
         
 
-    }, filter = "top")
+    }, filter = "top") #add obs filter option
 
 
-    
+    #define download button
     output$download_filtered <- 
     
         downloadHandler(
@@ -163,7 +160,7 @@ shinyServer(function(session, input, output) {
             }
         )
     
-    
+    #define linear regression model
     linreg <- eventReactive(input$fit, {
         newData1 <- getData() #%>% select(Lat, input$linregvars)
         set.seed(123)
@@ -178,7 +175,7 @@ shinyServer(function(session, input, output) {
         })
     })
     
-    
+    #output linreg training info
     output$lrMod <- renderPrint({
         summary(linreg())
         })
@@ -190,6 +187,7 @@ shinyServer(function(session, input, output) {
         data.frame(RMSE = rmse, adj.R2 = adj_r2)
     })
     
+    #define regression tree
     regtree <- eventReactive(input$fit, {
         newData2 <- getData() %>% select(Lat, input$regtreevars)
         
@@ -207,7 +205,7 @@ shinyServer(function(session, input, output) {
         })
     })
     
-    
+    #output regtree info
     output$rtPlot <- renderPlot({
         plot(regtree())
     })
@@ -225,6 +223,7 @@ shinyServer(function(session, input, output) {
         text(regtree()$finalModel)
     })
     
+    #output random forest model
     rf <- eventReactive(input$fit, {
         newData3 <- getData() %>% select(Lat, input$randforvars)
         
@@ -243,6 +242,7 @@ shinyServer(function(session, input, output) {
                   })
     })
     
+    #define best random forest model that will be used for plotting variable importance
     rfplot <- eventReactive(input$fit, {
         newData <- getData() %>% select(Lat, input$randforvars)
         
@@ -256,6 +256,7 @@ shinyServer(function(session, input, output) {
   
     })
     
+    #output rf training info
     output$rfPlot <- renderPlot({
         varImpPlot(rfplot())
     })
@@ -268,6 +269,7 @@ shinyServer(function(session, input, output) {
         rf()$results
     })
     
+    #predict on test set
     test_tab <- eventReactive(input$fit, {
         newData <- getData()
         
@@ -289,14 +291,18 @@ shinyServer(function(session, input, output) {
         
     })
     
+    #report model fits on test set
     output$testrun <- renderDT({
         test_tab()
     })
     
-    
+    #define prediction tab server info
     output$Pred <- renderPrint({
         
+        #user input for variable values
         newDat <- data.frame(Lon = input$Lon, temp = input$temp, feels_like = input$feels_like, temp_min = input$temp_min, temp_max = input$temp_max, pressure = input$pressure, humidity = input$humidity, wind_speed = input$wind_speed, wind_deg = input$wind_deg, numclouds = input$numclouds)
+        
+        #predictions for different models
         
         if (input$selectmod == "Linear Regression") {
             pred <- predict(linreg(), newdata = newDat)
