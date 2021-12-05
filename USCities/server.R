@@ -163,26 +163,31 @@ shinyServer(function(session, input, output) {
             }
         )
     
+    
     linreg <- eventReactive(input$fit, {
-        newData1 <- getData() %>% select(Lat, input$linregvars)
+        newData1 <- getData() #%>% select(Lat, input$linregvars)
         set.seed(123)
         trainIndex1 <- createDataPartition(newData1$Lat, p = input$train_p, list = FALSE)
-        train1 <- newData1[trainIndex1, ]
+        train1 <- newData1[trainIndex1, ] #%>% 
+            #mutate_if(is.numeric, scale)
         test1 <- newData1[-trainIndex1,]
         
-        fit_lr <- train(Lat ~ ., 
-                        data = train1,
-                        method = "lm", 
-                        preProcess = c("center", "scale"),
-                        trControl = trainControl(method = "cv", number = as.numeric(input$foldnum)))
+        
+        withProgress(message = "Training Linear Regression Model", {
+        fit_lr <- lm(as.formula(paste("Lat ~ ", paste(input$linregvars, collapse = "+"), paste("+", input$linregint, collapse = "+"))), data = train1)
+        })
     })
+    
     
     output$lrMod <- renderPrint({
         summary(linreg())
         })
     
     output$lrfit <- renderPrint({
-        linreg()$results
+        mse <- mean(residuals(linreg())^2)
+        rmse <- sqrt(mse)
+        adj_r2 <- summary(linreg())$adj.r.squared
+        data.frame(RMSE = rmse, adj.R2 = adj_r2)
     })
     
     regtree <- eventReactive(input$fit, {
@@ -193,12 +198,13 @@ shinyServer(function(session, input, output) {
         train2 <- newData2[trainIndex2, ]
         test2 <- newData2[-trainIndex2,]
         
+        withProgress(message = "Training Regression Tree Model", {
         regtree_fit <- train(Lat ~ ., 
                              data = train2,
-                             method = "rpart", 
-                             preProcess = c("center", "scale"),
+                             method = "rpart",
                              trControl = trainControl(method = "cv", number = as.numeric(input$foldnum)),
                              tuneGrid = expand.grid(cp = seq(from = 0, to = 0.1, by = 0.001)))
+        })
     })
     
     
@@ -214,6 +220,10 @@ shinyServer(function(session, input, output) {
         regtree()$results[1, ]
     })
     
+    output$rtPlot2 <- renderPlot({
+        plot(regtree()$finalModel)
+        text(regtree()$finalModel)
+    })
     
     rf <- eventReactive(input$fit, {
         newData3 <- getData() %>% select(Lat, input$randforvars)
@@ -223,13 +233,14 @@ shinyServer(function(session, input, output) {
         train3 <- newData3[trainIndex3, ]
         test3 <- newData3[-trainIndex3,]
         
+        withProgress(message = "Training Random Forest Model", {
         rf_fit <- train(Lat ~ ., 
                         data = train3,
                         method = "rf", 
-                        preProcess = c("center", "scale"),
                         trControl = trainControl(method = "cv", number = as.numeric(input$foldnum)),
                         tuneGrid = expand.grid(mtry = c(1:10))
         )
+                  })
     })
     
     rfplot <- eventReactive(input$fit, {
@@ -288,7 +299,7 @@ shinyServer(function(session, input, output) {
         newDat <- data.frame(Lon = input$Lon, temp = input$temp, feels_like = input$feels_like, temp_min = input$temp_min, temp_max = input$temp_max, pressure = input$pressure, humidity = input$humidity, wind_speed = input$wind_speed, wind_deg = input$wind_deg, numclouds = input$numclouds)
         
         if (input$selectmod == "Linear Regression") {
-            pred <- predict(linreg()$finalModel, newdata = newDat)
+            pred <- predict(linreg(), newdata = newDat)
             pred <- round(pred, digits = 3)
             paste("For these values, the predicted response for Latitude is", pred, sep = " ")
         } else if (input$selectmod == "Regression Tree"){
@@ -296,7 +307,7 @@ shinyServer(function(session, input, output) {
             pred <- round(pred, digits = 3)
             paste("For these values, the predicted response for Latitude is", pred, sep = " ")
         } else {
-            pred <- predict(regtree()$finalModel, newdata = newDat)
+            pred <- predict(rf()$finalModel, newdata = newDat)
             pred <- round(pred, digits = 3)
             paste("For these values, the predicted response for Latitude is", pred, sep = " ")
         }
